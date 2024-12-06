@@ -12,7 +12,7 @@ MCP project to connect Claude with X/Twitter for creating and managing posts dir
 ## Configuration
 
 ### Install UV Package Manager
-Install UV globally using Homebrew:
+Install UV globally using Homebrew on Terminal:
 ```bash
 brew install uv
 ```
@@ -119,5 +119,3 @@ If you encounter issues:
 2. Make sure all X/Twitter API credentials are correctly set in the configuration file
 
 3. Verify the path to x-mcp in your configuration matches your actual repository location
-
-4. Ensure you've activated the virtual environment before running UV commands
