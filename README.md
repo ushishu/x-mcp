@@ -1,6 +1,6 @@
 # X(Twitter) MCP server
 
-MCP project to connect Claude with X/Twitter for creating and managing posts directly from the chat interface.
+An MCP server to create, manage and publish X/Twitter posts directly through Claude chat.
 
 ## Features
 * Create draft tweets and threads
