@@ -1,4 +1,4 @@
-# x-mcp MCP server
+# X(Twitter) MCP server
 
 MCP project to connect Claude with X/Twitter for creating and managing posts directly from the chat interface.
 
@@ -18,11 +18,16 @@ brew install uv
 ```
 
 ### Claude Desktop Configuration
-Create or edit the Claude configuration file at:
-- MacOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- Windows: `%APPDATA%/Claude/claude_desktop_config.json`
 
-If the file doesn't exist, create it with the following content:
+1. For MacOS users:
+   - Create the `Claude` directory if it doesn't exist: `~/Library/Application Support/Claude/`
+   - Create `claude_desktop_config.json` file inside this directory
+
+2. For Windows users:
+   - Create the `Claude` directory if it doesn't exist: `%APPDATA%/Claude/`
+   - Create `claude_desktop_config.json` file inside this directory
+
+3. If you already have `claude_desktop_config.json`, add the following configuration to the existing file. If you just created the file, add this content:
 ```json
 {
   "mcpServers": {
@@ -91,12 +96,15 @@ uv sync
 
 ## Usage
 
-In your Claude chat, you can now:
-* Create a tweet: `Send a tweet saying "Hello, World!"`
-* Create a thread: `Create a thread about [topic]`
-* List drafts: `Show me all draft tweets`
-* Publish draft: `Publish draft [draft_id]`
-* Delete draft: `Delete draft [draft_id]`
+Chat with Claude naturally about posting to X/Twitter! Here are some fun examples:
+
+* "Hey Claude, tweet out 'Just learned how to tweet through AI - mind blown! 🤖✨'"
+* "Create a thread explaining why cats are the ultimate software engineers"
+* "Show me my draft tweets, I want to review them before posting"
+* "This draft looks perfect - let's publish it!"
+* "Oops, I changed my mind - delete that last draft please"
+* "Write a thread about the history of pizza, make it funny and informative"
+* "Tweet about the weather today, but make it dramatic like a movie trailer"
 
 ## Troubleshooting
 
@@ -113,10 +121,3 @@ If you encounter issues:
 3. Verify the path to x-mcp in your configuration matches your actual repository location
 
 4. Ensure you've activated the virtual environment before running UV commands
-
-## Development
-
-For debugging, use the MCP Inspector:
-```bash
-npx @modelcontextprotocol/inspector uv --directory /path/to/x-mcp run x-mcp
-```
