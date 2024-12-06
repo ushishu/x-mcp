@@ -1,33 +1,24 @@
-# X(Twitter) MCP server
+# x-mcp MCP server
 
 An MCP server to create, manage and publish X/Twitter posts directly through Claude chat.
 
-## Features
-* Create draft tweets and threads
-* List all existing drafts
-* Publish drafts to X/Twitter
-* Delete unwanted drafts
-* Direct integration with Claude chat
+## Quick Setup
 
-## Configuration
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/x-mcp.git
+```
 
-### Install UV Package Manager
-Install UV globally using Homebrew on Terminal:
+2. Install UV globally using Homebrew:
 ```bash
 brew install uv
 ```
 
-### Claude Desktop Configuration
+3. Create claude_desktop_config.json:
+   - For MacOS: Create directory `~/Library/Application Support/Claude/` and create the file inside it
+   - For Windows: Create directory `%APPDATA%/Claude/` and create the file inside it
 
-1. For MacOS users:
-   - Create the `Claude` directory if it doesn't exist: `~/Library/Application Support/Claude/`
-   - Create `claude_desktop_config.json` file inside this directory
-
-2. For Windows users:
-   - Create the `Claude` directory if it doesn't exist: `%APPDATA%/Claude/`
-   - Create `claude_desktop_config.json` file inside this directory
-
-3. If you already have `claude_desktop_config.json`, add the following configuration to the existing file. If you just created the file, add this content:
+4. Add this configuration to claude_desktop_config.json:
 ```json
 {
   "mcpServers": {
@@ -50,72 +41,31 @@ brew install uv
 }
 ```
 
-Replace `/path/to/x-mcp` with your actual path to the cloned repository.
+5. Get your X/Twitter API credentials:
+   - Go to [X API Developer Portal](https://developer.x.com/en/products/x-api)
+   - Create a project
+   - In User Authentication Settings: Set up with Read and Write permissions, Web App type
+   - Set Callback URL to `http://localhost/` and Website URL to `http://example.com/`
+   - Generate and copy all keys and tokens from Keys and Tokens section
 
-### Getting X/Twitter API Keys
+6. Update the config file:
+   - Replace `/path/to/x-mcp` with your actual repository path
+   - Add your X/Twitter API credentials
 
-1. Go to [X API Developer Portal](https://developer.x.com/en/products/x-api)
-2. Click on "Developer Portal"
-3. Create a new project
-4. Navigate to "Projects and Apps"
-5. Select your project
-6. In "User Authentication Settings":
-   - Click "Set up"
-   - Select "Read and Write" permissions
-   - Choose "Web App, Automated App or Bot" for App Type
-   - Set Callback URL/Redirect URL to `http://localhost/`
-   - Set Website URL to `http://example.com/`
-   - Click "Save"
-7. Go to "Keys and Tokens" section:
-   - Generate API Key and Secret
-   - Generate Access Token and Access Token Secret
-   - Copy and store all credentials safely
+7. Quit Claude completely and reopen it
 
-Replace the placeholder values in `claude_desktop_config.json` with your actual credentials.
+## Usage Examples
 
-## Run Locally
-
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/x-mcp.git
-cd x-mcp
-```
-
-2. Create and activate virtual environment:
-```bash
-python -m venv .venv
-source .venv/bin/activate  # On Unix/macOS
-# or
-.venv\Scripts\activate  # On Windows
-```
-
-3. Install dependencies:
-```bash
-uv sync
-```
-
-## Usage
-
-Chat with Claude naturally about posting to X/Twitter! Here are some fun examples:
-
-* "Hey Claude, tweet out 'Just learned how to tweet through AI - mind blown! 🤖✨'"
-* "Create a thread explaining why cats are the ultimate software engineers"
-* "Show me my draft tweets, I want to review them before posting"
-* "This draft looks perfect - let's publish it!"
-* "Oops, I changed my mind - delete that last draft please"
-* "Write a thread about the history of pizza, make it funny and informative"
-* "Tweet about the weather today, but make it dramatic like a movie trailer"
+* "Tweet 'Just learned how to tweet through AI - mind blown! 🤖✨'"
+* "Create a thread about the history of pizza"
+* "Show me my draft tweets"
+* "Publish this draft!"
+* "Delete that draft"
 
 ## Troubleshooting
 
-If you encounter issues:
-
-1. UV Installation: If the server isn't working, it might be because UV was installed locally via pip instead of globally. To fix this:
-   - Uninstall UV: `pip uninstall uv`
-   - Install globally using Homebrew: `brew install uv`
-   - OR find your UV path: `which uv`
-   - Replace `"command": "uv"` with `"command": "/your/uv/path"` in `claude_desktop_config.json`
-
-2. Make sure all X/Twitter API credentials are correctly set in the configuration file
-
-3. Verify the path to x-mcp in your configuration matches your actual repository location
+If not working:
+- Make sure UV is installed globally (if not, uninstall with `pip uninstall uv` and reinstall with `brew install uv`)
+- Or find UV path with `which uv` and replace `"command": "uv"` with the full path
+- Verify all X/Twitter credentials are correct
+- Check if the x-mcp path in config matches your actual repository location
