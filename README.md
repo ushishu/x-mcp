@@ -9,14 +9,14 @@ An MCP server to create, manage and publish X/Twitter posts directly through Cla
 git clone https://github.com/yourusername/x-mcp.git
 ```
 
-2. Install UV globally using Homebrew:
+2. Install UV globally using Homebrew in Terminal:
 ```bash
 brew install uv
 ```
 
 3. Create claude_desktop_config.json:
-   - For MacOS: Create directory `~/Library/Application Support/Claude/` and create the file inside it
-   - For Windows: Create directory `%APPDATA%/Claude/` and create the file inside it
+   - For MacOS: Open directory `~/Library/Application Support/Claude/` and create the file inside it
+   - For Windows: Open directory `%APPDATA%/Claude/` and create the file inside it
 
 4. Add this configuration to claude_desktop_config.json:
 ```json
