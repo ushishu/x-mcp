@@ -1,111 +1,122 @@
-# x_mcp MCP server
+# x-mcp MCP server
 
-A server to create drafts of X(twitter) posts, threads using LLMs and post directly from the chat.
+MCP project to connect Claude with X/Twitter for creating and managing posts directly from the chat interface.
 
-## Components
-
-### Resources
-
-The server implements a simple note storage system with:
-- Custom note:// URI scheme for accessing individual notes
-- Each note resource has a name, description and text/plain mimetype
-
-### Prompts
-
-The server provides a single prompt:
-- summarize-notes: Creates summaries of all stored notes
-  - Optional "style" argument to control detail level (brief/detailed)
-  - Generates prompt combining all current notes with style preference
-
-### Tools
-
-The server implements one tool:
-- add-note: Adds a new note to the server
-  - Takes "name" and "content" as required string arguments
-  - Updates server state and notifies clients of resource changes
+## Features
+* Create draft tweets and threads
+* List all existing drafts
+* Publish drafts to X/Twitter
+* Delete unwanted drafts
+* Direct integration with Claude chat
 
 ## Configuration
 
-[TODO: Add configuration details specific to your implementation]
+### Install UV Package Manager
+Install UV globally using Homebrew:
+```bash
+brew install uv
+```
 
-## Quickstart
+### Claude Desktop Configuration
+Create or edit the Claude configuration file at:
+- MacOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%/Claude/claude_desktop_config.json`
 
-### Install
-
-#### Claude Desktop
-
-On MacOS: `~/Library/Application\ Support/Claude/claude_desktop_config.json`
-On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
-
-<details>
-  <summary>Development/Unpublished Servers Configuration</summary>
-  ```
+If the file doesn't exist, create it with the following content:
+```json
+{
   "mcpServers": {
     "x_mcp": {
       "command": "uv",
       "args": [
         "--directory",
-        "/Users/vidhupv/Desktop/x_mcp/x_mcp",
+        "/path/to/x-mcp",
         "run",
-        "x_mcp"
-      ]
+        "x-mcp"
+      ],
+      "env": {
+        "TWITTER_API_KEY": "your_api_key",
+        "TWITTER_API_SECRET": "your_api_secret",
+        "TWITTER_ACCESS_TOKEN": "your_access_token",
+        "TWITTER_ACCESS_TOKEN_SECRET": "your_access_token_secret"
+      }
     }
   }
-  ```
-</details>
+}
+```
 
-<details>
-  <summary>Published Servers Configuration</summary>
-  ```
-  "mcpServers": {
-    "x_mcp": {
-      "command": "uvx",
-      "args": [
-        "x_mcp"
-      ]
-    }
-  }
-  ```
-</details>
+Replace `/path/to/x-mcp` with your actual path to the cloned repository.
 
-## Development
+### Getting X/Twitter API Keys
 
-### Building and Publishing
+1. Go to [X API Developer Portal](https://developer.x.com/en/products/x-api)
+2. Click on "Developer Portal"
+3. Create a new project
+4. Navigate to "Projects and Apps"
+5. Select your project
+6. In "User Authentication Settings":
+   - Click "Set up"
+   - Select "Read and Write" permissions
+   - Choose "Web App, Automated App or Bot" for App Type
+   - Set Callback URL/Redirect URL to `http://localhost/`
+   - Set Website URL to `http://example.com/`
+   - Click "Save"
+7. Go to "Keys and Tokens" section:
+   - Generate API Key and Secret
+   - Generate Access Token and Access Token Secret
+   - Copy and store all credentials safely
 
-To prepare the package for distribution:
+Replace the placeholder values in `claude_desktop_config.json` with your actual credentials.
 
-1. Sync dependencies and update lockfile:
+## Run Locally
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/x-mcp.git
+cd x-mcp
+```
+
+2. Create and activate virtual environment:
+```bash
+python -m venv .venv
+source .venv/bin/activate  # On Unix/macOS
+# or
+.venv\Scripts\activate  # On Windows
+```
+
+3. Install dependencies:
 ```bash
 uv sync
 ```
 
-2. Build package distributions:
+## Usage
+
+In your Claude chat, you can now:
+* Create a tweet: `Send a tweet saying "Hello, World!"`
+* Create a thread: `Create a thread about [topic]`
+* List drafts: `Show me all draft tweets`
+* Publish draft: `Publish draft [draft_id]`
+* Delete draft: `Delete draft [draft_id]`
+
+## Troubleshooting
+
+If you encounter issues:
+
+1. UV Installation: If the server isn't working, it might be because UV was installed locally via pip instead of globally. To fix this:
+   - Uninstall UV: `pip uninstall uv`
+   - Install globally using Homebrew: `brew install uv`
+   - OR find your UV path: `which uv`
+   - Replace `"command": "uv"` with `"command": "/your/uv/path"` in `claude_desktop_config.json`
+
+2. Make sure all X/Twitter API credentials are correctly set in the configuration file
+
+3. Verify the path to x-mcp in your configuration matches your actual repository location
+
+4. Ensure you've activated the virtual environment before running UV commands
+
+## Development
+
+For debugging, use the MCP Inspector:
 ```bash
-uv build
+npx @modelcontextprotocol/inspector uv --directory /path/to/x-mcp run x-mcp
 ```
-
-This will create source and wheel distributions in the `dist/` directory.
-
-3. Publish to PyPI:
-```bash
-uv publish
-```
-
-Note: You'll need to set PyPI credentials via environment variables or command flags:
-- Token: `--token` or `UV_PUBLISH_TOKEN`
-- Or username/password: `--username`/`UV_PUBLISH_USERNAME` and `--password`/`UV_PUBLISH_PASSWORD`
-
-### Debugging
-
-Since MCP servers run over stdio, debugging can be challenging. For the best debugging
-experience, we strongly recommend using the [MCP Inspector](https://github.com/modelcontextprotocol/inspector).
-
-
-You can launch the MCP Inspector via [`npm`](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) with this command:
-
-```bash
-npx @modelcontextprotocol/inspector uv --directory /Users/vidhupv/Desktop/x_mcp/x_mcp run x-mcp
-```
-
-
-Upon launching, the Inspector will display a URL that you can access in your browser to begin debugging.
