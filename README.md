@@ -1,4 +1,4 @@
-# x-mcp MCP server
+# X(Twitter) MCP server
 
 An MCP server to create, manage and publish X/Twitter posts directly through Claude chat.
 
