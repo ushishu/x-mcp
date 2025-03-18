@@ -2,7 +2,7 @@
 
 [![smithery badge](https://smithery.ai/badge/x-mcp)](https://smithery.ai/server/x-mcp)
 
-An MCP server to create, manage and publish X/Twitter posts directly through Claude chat.
+An MCP server to create, manage and publish X/Twitter posts directly through Claude chat. Supports text tweets, threads, and media uploads (including GIFs, PNGs, JPEGs).
 
 ## Quick Setup
 
@@ -69,9 +69,20 @@ brew install uv
 
 * "Tweet 'Just learned how to tweet through AI - mind blown! 🤖✨'"
 * "Create a thread about the history of pizza"
+* "Upload this GIF with a funny caption"
+* "Post this image with my tweet about the sunset"
 * "Show me my draft tweets"
 * "Publish this draft!"
 * "Delete that draft"
+
+## Features
+
+* Create and manage draft tweets
+* Create tweet threads with multiple posts
+* Upload and attach media files (GIFs, images) to tweets
+* List all your draft tweets and threads
+* Publish drafts to your X/Twitter account
+* Delete unwanted drafts
 
 ## Troubleshooting
 
@@ -80,3 +91,4 @@ If not working:
 - Or find UV path with `which uv` and replace `"command": "uv"` with the full path
 - Verify all X/Twitter credentials are correct
 - Check if the x-mcp path in config matches your actual repository location
+- For media uploads, ensure the file path is correct and the file exists

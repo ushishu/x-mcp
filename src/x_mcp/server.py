@@ -17,7 +17,7 @@ from mcp.types import (
 # Load environment variables from .env file
 load_dotenv()
 
-# Configure logging
+# Logging configuration
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("x_mcp")
 
@@ -30,7 +30,7 @@ ACCESS_TOKEN_SECRET = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
 if not all([API_KEY, API_SECRET, ACCESS_TOKEN, ACCESS_TOKEN_SECRET]):
     raise ValueError("Twitter API credentials are required")
 
-# Initialize Tweepy client with OAuth 2.0
+# Initialize Tweepy client (OAuth 2.0 for token generation + API for media uploads)
 client = tweepy.Client(
     consumer_key=API_KEY,
     consumer_secret=API_SECRET,
@@ -38,10 +38,19 @@ client = tweepy.Client(
     access_token_secret=ACCESS_TOKEN_SECRET
 )
 
-# Create the MCP server instance
+auth = tweepy.OAuth1UserHandler(
+    consumer_key=API_KEY,
+    consumer_secret=API_SECRET,
+    access_token=ACCESS_TOKEN,
+    access_token_secret=ACCESS_TOKEN_SECRET
+)
+
+# API instance for media uploads
+api = tweepy.API(auth)
+
 server = Server("x_mcp")
 
-# Implement tool handlers
+# List available tools
 @server.list_tools()
 async def list_tools() -> list[Tool]:
     """List available tools for interacting with Twitter/X."""
@@ -112,6 +121,24 @@ async def list_tools() -> list[Tool]:
                 "required": ["draft_id"],
             },
         ),
+        Tool(
+            name="upload_media_and_tweet",
+            description="Upload a media file (GIF/PNG/JPEG etc.) and create a tweet draft",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "media_path": {
+                        "type": "string",
+                        "description": "The file path of the media to upload",
+                    },
+                    "tweet_text": {
+                        "type": "string",
+                        "description": "The text content of the tweet",
+                    },
+                },
+                "required": ["media_path", "tweet_text"],
+            },
+        ),
     ]
 
 @server.call_tool()
@@ -127,19 +154,34 @@ async def call_tool(name: str, arguments: Any) -> Sequence[TextContent]:
         return await handle_publish_draft(arguments)
     elif name == "delete_draft":
         return await handle_delete_draft(arguments)
+    elif name == "upload_media_and_tweet":
+        return await handle_upload_media_and_tweet(arguments)
     else:
         raise ValueError(f"Unknown tool: {name}")
 
+async def upload_media(file_path: str) -> str:
+    """
+    Upload media to Twitter and return the media ID.
+    - file_path: Path to the media file
+    """
+    try:
+        media = api.media_upload(file_path)
+        return media.media_id_string
+    except tweepy.TweepyException as e:
+        logger.error(f"Twitter API error during media upload: {e}")
+        raise RuntimeError(f"Media upload error: {e}")
+
 async def handle_create_draft_tweet(arguments: Any) -> Sequence[TextContent]:
+    """
+    Create a draft for a regular text tweet and save it to a file.
+    - arguments: {"content": "<tweet content>"}
+    """
     if not isinstance(arguments, dict) or "content" not in arguments:
         raise ValueError("Invalid arguments for create_draft_tweet")
     content = arguments["content"]
     try:
-        # Simulate creating a draft by storing it locally
         draft = {"content": content, "timestamp": datetime.now().isoformat()}
-        # Ensure drafts directory exists
         os.makedirs("drafts", exist_ok=True)
-        # Save the draft to a file
         draft_id = f"draft_{int(datetime.now().timestamp())}.json"
         with open(os.path.join("drafts", draft_id), "w") as f:
             json.dump(draft, f, indent=2)
@@ -155,6 +197,10 @@ async def handle_create_draft_tweet(arguments: Any) -> Sequence[TextContent]:
         raise RuntimeError(f"Error creating draft tweet: {str(e)}")
 
 async def handle_create_draft_thread(arguments: Any) -> Sequence[TextContent]:
+    """
+    Create a draft for a thread of multiple tweets and save it to a file.
+    - arguments: {"contents": ["tweet1","tweet2",...]}
+    """
     if not isinstance(arguments, dict) or "contents" not in arguments:
         raise ValueError("Invalid arguments for create_draft_thread")
     contents = arguments["contents"]
@@ -162,9 +208,7 @@ async def handle_create_draft_thread(arguments: Any) -> Sequence[TextContent]:
         raise ValueError("Invalid contents for create_draft_thread")
     try:
         draft = {"contents": contents, "timestamp": datetime.now().isoformat()}
-        # Ensure drafts directory exists
         os.makedirs("drafts", exist_ok=True)
-        # Save the draft to a file
         draft_id = f"thread_draft_{int(datetime.now().timestamp())}.json"
         with open(os.path.join("drafts", draft_id), "w") as f:
             json.dump(draft, f, indent=2)
@@ -180,6 +224,9 @@ async def handle_create_draft_thread(arguments: Any) -> Sequence[TextContent]:
         raise RuntimeError(f"Error creating draft thread: {str(e)}")
 
 async def handle_list_drafts(arguments: Any) -> Sequence[TextContent]:
+    """
+    List all tweet and thread drafts saved in the drafts directory.
+    """
     try:
         drafts = []
         if os.path.exists("drafts"):
@@ -199,33 +246,53 @@ async def handle_list_drafts(arguments: Any) -> Sequence[TextContent]:
         raise RuntimeError(f"Error listing drafts: {str(e)}")
 
 async def handle_publish_draft(arguments: Any) -> Sequence[TextContent]:
+    """
+    Publish a draft to Twitter.
+    - Determines whether it's a single tweet or thread based on the draft content.
+    """
     if not isinstance(arguments, dict) or "draft_id" not in arguments:
         raise ValueError("Invalid arguments for publish_draft")
+    
     draft_id = arguments["draft_id"]
     filepath = os.path.join("drafts", draft_id)
+    
     if not os.path.exists(filepath):
         raise ValueError(f"Draft {draft_id} does not exist")
+    
     try:
         with open(filepath, "r") as f:
             draft = json.load(f)
+        
+        # Single tweet
         if "content" in draft:
-            # Single tweet
             content = draft["content"]
-            response = client.create_tweet(text=content)
+            media_ids = None
+            
+            # Regular draft with media path (images etc.)
+            if "media_path" in draft:
+                media_id = await upload_media(draft["media_path"])
+                media_ids = [media_id]
+            # Case where media ID is directly included (including GIFs)
+            elif "media_id" in draft:
+                media_ids = [draft["media_id"]]
+                
+            response = client.create_tweet(text=content, media_ids=media_ids)
             tweet_id = response.data['id']
             logger.info(f"Published tweet ID {tweet_id}")
-            # Delete the draft after publishing
+            
+            # Delete draft file after posting is complete
             os.remove(filepath)
+            
             return [
                 TextContent(
                     type="text",
                     text=f"Draft {draft_id} published as tweet ID {tweet_id}",
                 )
             ]
+        
+        # Thread
         elif "contents" in draft:
-            # Thread
             contents = draft["contents"]
-            # Publish the thread
             last_tweet_id = None
             for content in contents:
                 if last_tweet_id is None:
@@ -233,10 +300,12 @@ async def handle_publish_draft(arguments: Any) -> Sequence[TextContent]:
                 else:
                     response = client.create_tweet(text=content, in_reply_to_tweet_id=last_tweet_id)
                 last_tweet_id = response.data['id']
-                await asyncio.sleep(1)  # Avoid hitting rate limits
+                # Sleep to avoid rate limits
+                await asyncio.sleep(1)
+            
             logger.info(f"Published thread starting with tweet ID {last_tweet_id}")
-            # Delete the draft after publishing
             os.remove(filepath)
+            
             return [
                 TextContent(
                     type="text",
@@ -245,15 +314,77 @@ async def handle_publish_draft(arguments: Any) -> Sequence[TextContent]:
             ]
         else:
             raise ValueError(f"Invalid draft format for {draft_id}")
-    except tweepy.TweepError as e:
+    except tweepy.TweepyException as e:
         logger.error(f"Twitter API error: {e}")
         raise RuntimeError(f"Error publishing draft {draft_id}: {e}")
     except Exception as e:
         logger.error(f"Error publishing draft {draft_id}: {str(e)}")
         raise RuntimeError(f"Error publishing draft {draft_id}: {str(e)}")
 
+async def handle_upload_media_and_tweet(arguments: Any) -> Sequence[TextContent]:
+    """
+    Upload a generic media file (GIF/PNG/JPEG etc.) and create a draft tweet with it.
+    - arguments: {"media_path": "<media file path>", "tweet_text": "<tweet text>"}
+    """
+    if not isinstance(arguments, dict) or "media_path" not in arguments or "tweet_text" not in arguments:
+        raise ValueError("Invalid arguments for upload_media_and_tweet")
+    
+    media_path = arguments["media_path"]
+    tweet_text = arguments["tweet_text"]
+    
+    if not os.path.exists(media_path):
+        raise ValueError(f"Media file {media_path} does not exist")
+    
+    try:
+        # Upload media to Twitter
+        media = api.media_upload(filename=media_path)
+        media_id = media.media_id_string
+        
+        # Create draft
+        draft = {
+            "content": tweet_text,
+            "media_id": media_id,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        # Create drafts directory
+        os.makedirs("drafts", exist_ok=True)
+        
+        # Save draft file
+        draft_id = f"media_draft_{int(datetime.now().timestamp())}.json"
+        with open(os.path.join("drafts", draft_id), "w") as f:
+            json.dump(draft, f, indent=2)
+        
+        logger.info(f"Draft tweet with media created: {draft_id}")
+        
+        return [
+            TextContent(
+                type="text",
+                text=(
+                    f"Draft tweet with media created with ID {draft_id}\n"
+                    f"Preview:\nText: {tweet_text}\nMedia: {media_path}\n\n"
+                    f"Use publish_draft with this ID to post the tweet."
+                ),
+            )
+        ]
+    except tweepy.TweepyException as e:
+        logger.error(f"Twitter API error: {e}")
+        error_details = str(e)
+        return [
+            TextContent(
+                type="text",
+                text=f"Error creating draft tweet with media: {error_details}",
+            )
+        ]
+    except Exception as e:
+        logger.error(f"Error creating draft tweet with media: {str(e)}")
+        raise RuntimeError(f"Error creating draft tweet with media: {str(e)}")
 
 async def handle_delete_draft(arguments: Any) -> Sequence[TextContent]:
+    """
+    Delete a specific draft file.
+    - arguments: {"draft_id": "<draft file name>"}
+    """
     if not isinstance(arguments, dict) or "draft_id" not in arguments:
         raise ValueError("Invalid arguments for delete_draft")
     
@@ -276,7 +407,7 @@ async def handle_delete_draft(arguments: Any) -> Sequence[TextContent]:
     except Exception as e:
         logger.error(f"Error deleting draft {draft_id}: {str(e)}")
         raise RuntimeError(f"Error deleting draft {draft_id}: {str(e)}")
-# Implement the main function
+
 async def main():
     import mcp
     async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
